@@ -157,4 +157,9 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.12',
     ],
+    entry_points={
+        "lms.djangoapp": [
+            "platform_plugin_hyperpayr = platform_plugin_hyperpay.apps:PlatformPluginHyperpayConfig",
+        ],
+    },
 )

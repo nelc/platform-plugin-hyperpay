@@ -5,3 +5,4 @@ Django             # Web application framework
 
 
 openedx-atlas
+edx_django_utils   # Django utilities, we use caching and monitoring
