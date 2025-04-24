@@ -5,6 +5,7 @@ platform_plugin_hyperpay Django application initialization.
 from django.apps import AppConfig
 from edx_django_utils.plugins import PluginSettings, PluginURLs
 
+
 class PlatformPluginHyperpayConfig(AppConfig):
     """
     Configuration for the platform_plugin_hyperpay Django application.
