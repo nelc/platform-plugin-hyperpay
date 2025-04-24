@@ -12,6 +12,7 @@ class PlatformPluginHyperpayConfig(AppConfig):
     """
 
     name = 'platform_plugin_hyperpay'
+    verbose_name = 'Hyperpay plugin for payment processor.'
     plugin_app = {
         PluginURLs.CONFIG: {
             "lms.djangoapp": {

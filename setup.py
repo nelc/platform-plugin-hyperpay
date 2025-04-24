@@ -159,7 +159,7 @@ setup(
     ],
     entry_points={
         "lms.djangoapp": [
-            "platform_plugin_hyperpayr = platform_plugin_hyperpay.apps:PlatformPluginHyperpayConfig",
+            "platform_plugin_hyperpay = platform_plugin_hyperpay.apps:PlatformPluginHyperpayConfig",
         ],
     },
 )
