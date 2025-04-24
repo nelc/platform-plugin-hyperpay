@@ -1,0 +1,2 @@
+class HyperPayException(Exception):
+    pass
