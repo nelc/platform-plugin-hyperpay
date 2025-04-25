@@ -12,7 +12,7 @@ class HyperPayPaymentPageView(View):
     """
     Render the template which loads the HyperPay payment form via JavaScript
     """
-    template_name = 'payment.html'
+    template_name = 'payment/pay.html'
 
     def get(self, request):
         """

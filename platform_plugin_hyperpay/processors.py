@@ -143,7 +143,7 @@ class HyperPay:
         )
         transaction_parameters = {
             'payment_widget_js': payment_widget_js_url,
-            'payment_page_url': reverse('hyperpay:payment-form'),
+            'payment_page_url': reverse('hyperpay-payment:pay-page'),
             'payment_result_url': self.return_url,
             'brands': self.BRANDS,
             'payment_mode': self.PAYMENT_MODE,

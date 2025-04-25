@@ -1,0 +1,44 @@
+<h1>hola</h1>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Security-Policy"
+        content="
+        style-src 'self' {{ hyper_pay_api_base_url }} {{ extra_hosts_content_security_policy }} 'unsafe-inline' ;
+        frame-src 'self' {{ hyper_pay_api_base_url }} {{ extra_hosts_content_security_policy }};
+        script-src 'self' {{ hyper_pay_api_base_url }} {{ extra_hosts_content_security_policy }} 'nonce-{{ nonce_id }}' ;
+        connect-src 'self' {{ hyper_pay_api_base_url }} {{ extra_hosts_content_security_policy }};
+        img-src 'self' {{ hyper_pay_api_base_url }} {{ extra_hosts_content_security_policy }};
+        ">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>"HyperPay" - {{ payment_mode }}</title>
+
+        <script src="{{ payment_widget_js }}" integrity="{{ integrity }}" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery.js" type="text/javascript" nonce="{{ nonce_id }}"></script>
+        <script type="text/javascript" nonce="{{ nonce_id }}">
+            var wpwlOptions = {
+              style: 'logos',
+              brandDetection: true,
+              brandDetectionType: 'binlist',
+              locale: "{{ locale }}",
+              maskCvv: true,
+              billingAddress: {},
+              mandatoryBillingFields: {
+                country: true,
+                state: true,
+                city: true,
+                postcode: true,
+                street1: true,
+                street2: false
+              }
+            }
+        </script>
+    </head>
+    <body>
+
+        <form action="{{ payment_result_url }}" class="paymentWidgets" data-brands="{{ brands }}">
+        </form>
+
+    </body>
+</html>
