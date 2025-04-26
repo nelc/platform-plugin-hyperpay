@@ -3,8 +3,14 @@ from django.conf import settings
 from platform_plugin_hyperpay.exceptions import HyperPayException
 from urllib.parse import urlencode
 from django.urls import reverse
+from enum import Enum
 
 import requests
+import logging
+import re
+
+logger = logging.getLogger(__name__)
+
 
 def format_price(price):
     """
@@ -12,6 +18,10 @@ def format_price(price):
     """
     return '{:0.2f}'.format(price)
 
+class PaymentStatus(Enum):
+    SUCCESS = 0
+    PENDING = 1
+    FAILURE = 2
 
 class HyperPay:
     """
@@ -33,6 +43,13 @@ class HyperPay:
     BRANDS = "VISA MASTER"
     CHECKOUT_TEXT = _("Checkout with credit card")
 
+    SUCCESS_CODES_REGEX = re.compile(r'^(000\.000\.|000\.100\.1|000\.[36])')
+    SUCCESS_MANUAL_REVIEW_CODES_REGEX = re.compile(r'^(000\.400\.0[^3]|000\.400\.[0-1]{2}0)')
+    PENDING_CHANGEABLE_SOON_CODES_REGEX = re.compile(r'^(000\.200)')
+    PENDING_NOT_CHANGEABLE_SOON_CODES_REGEX = re.compile(r'^(800\.400\.5|100\.400\.500)')
+    PENDING_STATUS_URL_NAME = 'hyperpay:status-check'
+    PENDING_STATUS_PAGE_TITLE = 'HyperPay - Credit card - pending'
+
 
     def __init__(self):
         self.access_token = settings.HYPERPAY_CONFIG[self.NAME]['access_token']
@@ -43,6 +60,7 @@ class HyperPay:
         self.test_mode = settings.HYPERPAY_CONFIG[self.NAME].get('test_mode')
         self.encryption_key = settings.HYPERPAY_CONFIG[self.NAME].get('encryption_key', settings.SECRET_KEY)
         self.salt = settings.HYPERPAY_CONFIG[self.NAME]['salt']
+        self.pending_status_polling_interval = 30
 
     @property
     def authentication_headers(self):
@@ -108,8 +126,8 @@ class HyperPay:
 
         request_data.update(self._get_basket_data(request))
         request_data.update(self._get_profile_data(request))
-        print("--------------\n")
-        print(request_data)
+        logger.info("--------------\n")
+        logger.info(request_data)
         try:
             response = requests.post(
                 checkouts_api_url,
@@ -120,7 +138,7 @@ class HyperPay:
             raise HyperPayException('Error creating a checkout. {}'.format(exc))
 
         data = response.json()
-        print(data)
+        logger.info(data)
         if 'result' not in data or 'code' not in data['result']:
             raise HyperPayException(
                 'Error creating checkout. Invalid response from HyperPay.'
@@ -154,6 +172,120 @@ class HyperPay:
             'extra_hosts_content_security_policy': getattr(settings, 'EXTRA_HOSTS_CONTENT_SECURITY_POLICY', ''),
         }
         return transaction_parameters
+
+    def _verify_status(self, resource_path):
+        """
+        Verify the status of the payment.
+        """
+        status = PaymentStatus.SUCCESS
+        payment_status_endpoint = "{}?{}".format(
+            self.payment_processor.hyper_pay_api_base_url + resource_path,
+            urlencode({'entityId': self.payment_processor.configuration['entity_id']})
+        )
+        response = requests.get(payment_status_endpoint, headers=self.payment_processor.authentication_headers)
+        response_data = response.json()
+
+        result_code = response_data['result']['code']
+        if not response.ok:
+            logger.error('Received a non-success response status code from HyperPay %s', response.status_code)
+            status = PaymentStatus.FAILURE
+        elif self.PENDING_CHANGEABLE_SOON_CODES_REGEX.search(result_code):
+            logger.warning(
+                'Received a pending status code %s from HyperPay for payment id %s.',
+                result_code,
+                response_data['id']
+            )
+            status = PaymentStatus.PENDING
+        elif self.PENDING_NOT_CHANGEABLE_SOON_CODES_REGEX.search(result_code):
+            logger.warning(
+                'Received a pending status code %s from HyperPay for payment id %s. As this can change '
+                'after several days, treating it as a failure.',
+                result_code,
+                response_data['id']
+            )
+            status = PaymentStatus.FAILURE
+        elif self.SUCCESS_CODES_REGEX.search(result_code):
+            logger.info(
+                'Received a success status code %s from HyperPay for payment id %s.',
+                result_code,
+                response_data['id']
+            )
+        elif self.SUCCESS_MANUAL_REVIEW_CODES_REGEX.search(result_code):
+            logger.error(
+                'Received a success status code %s from HyperPay which requires manual verification for payment id %s.'
+                'Treating it as a failed transaction.',
+                result_code,
+                response_data['id']
+            )
+
+            # This is a temporary change till we get clarity on whether this should be treated as a failure.
+            status = PaymentStatus.FAILURE
+        else:
+            logger.error(
+                'Received a rejection status code %s from HyperPay for payment id %s',
+                result_code,
+                response_data['id']
+            )
+            status = PaymentStatus.FAILURE
+
+        return response_data, status
+
+    def _verify_status(self, resource_path):
+        """
+        Verify the status of the payment.
+        """
+        status = PaymentStatus.SUCCESS
+        payment_status_endpoint = "{}?{}".format(
+            self.hyper_pay_api_base_url + resource_path,
+            urlencode({'entityId': self.entity_id})
+        )
+        response = requests.get(payment_status_endpoint, headers=self.authentication_headers)
+        response_data = response.json()
+
+        result_code = response_data['result']['code']
+        if not response.ok:
+            logger.error('Received a non-success response status code from HyperPay %s', response.status_code)
+            status = PaymentStatus.FAILURE
+        elif self.PENDING_CHANGEABLE_SOON_CODES_REGEX.search(result_code):
+            logger.warning(
+                'Received a pending status code %s from HyperPay for payment id %s.',
+                result_code,
+                response_data['id']
+            )
+            status = PaymentStatus.PENDING
+        elif self.PENDING_NOT_CHANGEABLE_SOON_CODES_REGEX.search(result_code):
+            logger.warning(
+                'Received a pending status code %s from HyperPay for payment id %s. As this can change '
+                'after several days, treating it as a failure.',
+                result_code,
+                response_data['id']
+            )
+            status = PaymentStatus.FAILURE
+        elif self.SUCCESS_CODES_REGEX.search(result_code):
+            logger.info(
+                'Received a success status code %s from HyperPay for payment id %s.',
+                result_code,
+                response_data['id']
+            )
+        elif self.SUCCESS_MANUAL_REVIEW_CODES_REGEX.search(result_code):
+            logger.error(
+                'Received a success status code %s from HyperPay which requires manual verification for payment id %s.'
+                'Treating it as a failed transaction.',
+                result_code,
+                response_data['id']
+            )
+
+            # This is a temporary change till we get clarity on whether this should be treated as a failure.
+            status = PaymentStatus.FAILURE
+        else:
+            logger.error(
+                'Received a rejection status code %s from HyperPay for payment id %s',
+                result_code,
+                response_data['id']
+            )
+            status = PaymentStatus.FAILURE
+
+        return response_data, status
 
 class HyperPayMada(HyperPay):
     """
