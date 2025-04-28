@@ -49,33 +49,30 @@ def decrypt_string(encrypted_message, encryption_key, salt):
     fernet = Fernet(generate_key(encryption_key, salt))
     return fernet.decrypt(encrypted_message.encode()).decode('utf-8')
 
-def get_payment_processor(request):
-    """Get the payment processor based on the request."""
-    if request.GET["processor"] == HyperPay.NAME:
-        processor = HyperPay()
-    elif request.GET["processor"] == HyperPayMada.NAME:
-        processor = HyperPayMada()
-    else:
-        raise HyperPayException('Invalid processor name.')
-    return processor
 
 class HyperPayPaymentPageView(View):
     """
     Render the template which loads the HyperPay payment form via JavaScript
     """
     template_name = 'payment/pay.html'
+    payment_processor = HyperPay()
 
     def get(self, request):
         """
         Handles the GET request.
         """
-        payment_processor = get_payment_processor(request)
-
-
-        context = payment_processor.get_transaction_parameters(request=request)
-
+        context = self.payment_processor.get_transaction_parameters(request=request)
         context["nonce_id"] = str(uuid.uuid4())
         return render(request, self.template_name, context)
+
+
+class HyperMadaPayPaymentPageView(View):
+    """
+    Render the template which loads the HyperPay Mada payment form via JavaScript
+    """
+    template_name = 'payment/pay.html'
+    payment_processor = HyperPayMada()
+
 
 
 class HyperPayResponseView(View):
