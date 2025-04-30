@@ -6,13 +6,14 @@
         <title>success order {{order_id}}</title>
     </head>
     <body>
-
+            <p1>
+                Checkout completed successfully with saleor order number {{order_number}}
+            </p1>
             <h1>
-                Checkout completed successfully with saleor order id {{order_id}}
+                <a href="http://saleor-storefront.local.overhang.io:18020/checkout?order={{order_id}}">
+                {{order_number}}
+                </a>
             </h1>
-            <p>
-                {{order_id}}
-            </p>
         </div>
     </body>
 </html>

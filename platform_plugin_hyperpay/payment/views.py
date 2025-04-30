@@ -142,9 +142,6 @@ class HyperPayResponseView(View):
             del request.session['hyperpay_dont_check_status']
         return check_status
 
-    def complete_saleor_checkout(self):
-        """TO DO create saleor connection"""
-        return 300000
 
     def get(self, request, encrypted_resource_path=None):
         """
@@ -173,10 +170,11 @@ class HyperPayResponseView(View):
 
             transaction_id = verification_response['id']
         finally:
-            logger.info('Transaction ID: %s received \n Verification_response: %s \n', transaction_id, verification_response)
+            logger.info('Transaction ID: %s received \n Verification_response:\n %s \n', transaction_id, verification_response)
 
         try:
-            order_id = self.complete_saleor_checkout()
+            if verification_response:
+                order_data = self.payment_processor.complete_saleor_checkout(verification_response)
         except Exception as exc:  # pylint:disable=broad-except
             logger.exception(
                 'Attempts to handle payment for basket [%d] failed due to [%s].',
@@ -184,4 +182,4 @@ class HyperPayResponseView(View):
                 exc.__class__.__name__
             )
 
-        return render(request, "payment/success.html", {"order_id": order_id})
+        return render(request, "payment/success.html", {"order_id": order_data.get('id'), "order_number": order_data.get('number')})

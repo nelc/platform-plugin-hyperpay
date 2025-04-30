@@ -21,12 +21,13 @@ def transaction_initialize(request):
     payload = json.loads(request.body)
     logger.info("received webhook payload: %s", payload)
 
-    action_type = payload.get("action",{}).get("actionType")
     amount = payload.get("action",{}).get("amount")
     data = payload.get("data", {})
     response = {
-        "pspReference": "fixedUUID",
-        "result": data.get("event",{}).get("type"),
+        "pspReference": data.get("id"),
+        "result": "CHARGE_SUCCESS",
+        "hyperpay_result_code": data.get("code"),
+        "description": data.get("description"),
         "message": "Great success!",
         "actions": "REFUND", # todo create this function
         "amount": amount,

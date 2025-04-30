@@ -1,6 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from platform_plugin_hyperpay.exceptions import HyperPayException
+from platform_plugin_hyperpay.saleor_app.manifest import HYPERPAY_APP_ID
 from urllib.parse import urlencode
 from django.urls import reverse
 from enum import Enum
@@ -8,6 +9,7 @@ from platform_plugin_saleor.services.helpers import get_saleor_api_client_instan
 import requests
 import logging
 import re
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -111,10 +113,48 @@ class HyperPay:
         basket_data.update(profile_data)
         return basket_data
 
-    def get_saleor_checkout_data(self, chekout_id):
+    def get_saleor_checkout_data(self, checkout_id):
         client = get_saleor_api_client_instance()
-        checkout_data = client.get_checkout_data(chekout_id)
+        checkout_data = client.get_checkout_data(checkout_id)
         return checkout_data
+
+    def init_saleor_transaction(self, saleor_checkout_id, data):
+        """
+        Initialize the transaction with Saleor.
+        """
+        client = get_saleor_api_client_instance()
+        transaction_data = client.initialize_transaction_for_checkout(
+            checkout_id=saleor_checkout_id,
+            payment_app_id=HYPERPAY_APP_ID,
+            data=data,
+            )
+        logger.info("Transaction data: %s", transaction_data)
+        return transaction_data
+
+    def complete_saleor_checkout(self, verification_response):
+        """TO DO create saleor connection"""
+        client = get_saleor_api_client_instance()
+        checkout_id = verification_response["merchantTransactionId"]
+        billing_address = {
+            "city": verification_response.get("billing", {}).get("city", ""),
+            "cityArea": verification_response.get("billing", {}).get("state",""),
+            "companyName": "Nelc Company",
+            "country": verification_response.get("billing", {}).get("country",""),
+            "countryArea": verification_response.get("billing", {}).get("state",""),
+            "firstName": verification_response.get("customer", {}).get("givenName",""),
+            "lastName": verification_response.get("customer", {}).get("surname",""),
+            "phone": verification_response.get("customer", {}).get("phone",""), # this seems not set =/
+            "postalCode": verification_response.get("billing", {}).get("postcode",""),
+            "streetAddress1": verification_response.get("billing", {}).get("street1",""),
+            "streetAddress2": verification_response.get("billing", {}).get("street2",""),
+        }
+        update_data = client.update_checkout_billing_adress(checkout_id=checkout_id, billing_address=billing_address)
+
+        logger.info("Update data for checkout %s: %s", checkout_id, update_data)
+        order_data = client.complete_checkout(checkout_id=checkout_id, metadata=[{"key": "payment_processor_response","value": json.dumps(verification_response)}])
+
+        logger.info("Order data for checkout %s: %s", checkout_id, order_data)
+        return order_data["checkoutComplete"]["order"]
 
     def _get_checkout_data(self, request):
         """
@@ -163,6 +203,7 @@ class HyperPay:
             self.hyper_pay_api_base_url + self.PAYMENT_WIDGET_JS_PATH,
             urlencode({'checkoutId': checkout_data['id']})
         )
+        self.init_saleor_transaction(saleor_checkout_id=request.GET['checkoutId'], data=checkout_data)
         transaction_parameters = {
             'payment_widget_js': payment_widget_js_url,
             'payment_page_url': reverse('hyperpay-payment:pay-page'),
