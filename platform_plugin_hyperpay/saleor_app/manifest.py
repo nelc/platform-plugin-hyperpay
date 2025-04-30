@@ -47,9 +47,9 @@ def get_app_manifest():
             'MANAGE_PAGE_TYPES_AND_ATTRIBUTES',
             'MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES'
         ],
-        'appUrl': f'{settings.LMS_ROOT_URL}',
-        'configurationUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/webhooks/configuration',
-        'tokenTargetUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/webhooks/register',
+        'appUrl': f'{settings.LMS_ROOT_URL}/hyperpay',
+        'configurationUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/api/configuration',
+        'tokenTargetUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/api/register',
         'dataPrivacy': 'Lorem ipsum',
         'brand': {
           'logo': {
@@ -61,7 +61,7 @@ def get_app_manifest():
             'name': 'Transaction Initialize Session',
             'syncEvents': ['TRANSACTION_INITIALIZE_SESSION',],
             'query':  TRANSACTION_INITIALIZE,
-            'targetUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/webhooks/fulfill-order',
+            'targetUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/api/webhooks/transaction-initialize-session',
             'isActive': True,
           }
         ]

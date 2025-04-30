@@ -4,7 +4,7 @@ from platform_plugin_hyperpay.exceptions import HyperPayException
 from urllib.parse import urlencode
 from django.urls import reverse
 from enum import Enum
-
+from platform_plugin_saleor.services.helpers import get_saleor_api_client_instance
 import requests
 import logging
 import re
@@ -80,36 +80,41 @@ class HyperPay:
             Return the cart field name.
             """
             return 'cart.items[{}].{}'.format(index, name)
+        checkout_id = request.GET['checkoutId']
+        checkout_data = self.get_saleor_checkout_data(checkout_id)["checkout"]
+        if checkout_data is None:
+            raise HyperPayException('Error getting checkout data from Saleor.')
 
         basket_data = {
-            'amount': format_price(float(request.GET['amount'])),
-            'currency': self.currency,
-            'merchantTransactionId': request.GET['merchantTransactionId'],
-            'merchantMemo': request.GET['merchantMemo'],
+            'amount': format_price(float(checkout_data["totalPrice"]["gross"]["amount"])),
+            'currency': self.currency,#checkout_data["totalPrice"]["currency"], only sar works
+            'merchantTransactionId': checkout_id,
 
         }
-        index = 0 # Initialize index for cart items
-        cart_data = {
-            get_cart_field(index, 'name'): request.GET['name'],
-            get_cart_field(index, 'quantity'): request.GET['quantity'],
-            get_cart_field(index, 'type'): self.CART_ITEM_TYPE_DIGITAL,
-            get_cart_field(index, 'sku'): request.GET['SKU'],
-            get_cart_field(index, 'price'): request.GET['price'],
-            get_cart_field(index, 'totalAmount'): request.GET['totalamount'],
-        }
+        for index, line in enumerate(checkout_data['lines']):
+            cart_data = {
+                get_cart_field(index, 'name'): line.get('variant',{}).get('name'),
+                get_cart_field(index, 'quantity'): line.get('quantity'),
+                get_cart_field(index, 'type'): self.CART_ITEM_TYPE_DIGITAL,
+                get_cart_field(index, 'sku'): line.get('variant',{}).get('sku'),
+                get_cart_field(index, 'price'): format_price(float(line.get('unitPrice',{}).get("gross", {}).get('amount'))),
+                get_cart_field(index, 'currency'): self.currency,
+                get_cart_field(index, 'totalAmount'): format_price(float(line.get('totalPrice',{}).get("gross", {}).get('amount'))),
+            }
         basket_data.update(cart_data)
 
+        profile_data =  {
+            'customer.email': checkout_data['email'],
+            'customer.givenName': checkout_data["user"]["firstName"],
+            'customer.surname': checkout_data["user"]["lastName"],
+        }
+        basket_data.update(profile_data)
         return basket_data
 
-    def _get_profile_data(self, request):
-        if not request.user.is_authenticated:
-            raise HyperPayException('User is not authenticated.')
-
-        return {
-            'customer.email': request.user.email,
-            'customer.givenName': request.user.first_name,
-            'customer.surname': request.user.last_name,
-        }
+    def get_saleor_checkout_data(self, chekout_id):
+        client = get_saleor_api_client_instance()
+        checkout_data = client.get_checkout_data(chekout_id)
+        return checkout_data
 
     def _get_checkout_data(self, request):
         """
@@ -125,7 +130,6 @@ class HyperPay:
             request_data['testMode'] = self.test_mode
 
         request_data.update(self._get_basket_data(request))
-        request_data.update(self._get_profile_data(request))
         logger.info("--------------\n")
         logger.info(request_data)
         try:
