@@ -4,9 +4,10 @@ import json
 import logging
 
 from django.conf import settings
+from django.core.cache import cache
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-
 from platform_plugin_hyperpay.saleor_app.manifest import get_app_manifest
 
 logger = logging.getLogger(__name__)
@@ -45,3 +46,38 @@ def register_saleor_app_token(request):
         {"success": True, "message": "Token received successfully."},
         status=200,
     )
+
+
+@csrf_exempt
+def configure_saleor_app(request):
+    """
+    This view renders the configuration form and saves the data in cache.
+    """
+    if request.method == "POST":
+        payment_url = request.POST.get('payment_url')
+        payment_button_image = request.POST.get('payment_button_image')
+        hyper_pay_api_base_url = request.POST.get('hyper_pay_api_base_url')
+        access_token = request.POST.get('access_token')
+
+        cache.set('payment_url', payment_url, timeout=36000)
+        cache.set('payment_button_image', payment_button_image, timeout=36000)
+        cache.set('hyper_pay_api_base_url', hyper_pay_api_base_url, timeout=36000)
+        cache.set('access_token', access_token, timeout=36000)
+
+        return render(request, 'saleor_app/configure.html', {
+            'payment_url': payment_url,
+            'hyper_pay_api_base_url': hyper_pay_api_base_url,
+            'access_token': access_token,
+            'success': True,
+        })
+    payment_url = cache.get('payment_url', '')
+    payment_button_image = cache.get('payment_button_image', '')
+    hyper_pay_api_base_url = cache.get('hyper_pay_api_base_url', '')
+    access_token = cache.get('access_token', '')
+
+    return render(request, 'saleor_app/configure.html', {
+        'payment_url': payment_url,
+        'hyper_pay_api_base_url': hyper_pay_api_base_url,
+        'access_token': access_token,
+        'success': False,
+    })

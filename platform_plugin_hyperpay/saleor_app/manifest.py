@@ -1,7 +1,6 @@
 """Defines the manifest for the Saleor app."""
 
 from django.conf import settings
-
 from platform_plugin_hyperpay.saleor_app.client.subscriptions import TRANSACTION_INITIALIZE
 
 HYPERPAY_APP_ID = "platform.plugin.hyperpay"
@@ -49,7 +48,7 @@ def get_app_manifest():
             'MANAGE_PAGE_TYPES_AND_ATTRIBUTES',
             'MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES'
         ],
-        'appUrl': f'{settings.LMS_ROOT_URL}/hyperpay',
+        'appUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app',
         'configurationUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/api/configuration',
         'tokenTargetUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/api/register',
         'dataPrivacy': 'Lorem ipsum',
