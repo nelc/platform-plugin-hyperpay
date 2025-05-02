@@ -1,7 +1,7 @@
 """Defines the manifest for the Saleor app."""
 
 from django.conf import settings
-from platform_plugin_hyperpay.saleor_app.client.subscriptions import TRANSACTION_INITIALIZE
+from platform_plugin_hyperpay.saleor_app.client.subscriptions import TRANSACTION_INITIALIZE, PAYMENT_GATEWAY_INITIALIZE_SESSION
 
 HYPERPAY_APP_ID = "platform.plugin.hyperpay"
 
@@ -64,7 +64,15 @@ def get_app_manifest():
             'query':  TRANSACTION_INITIALIZE,
             'targetUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/api/webhooks/transaction-initialize-session',
             'isActive': True,
-          }
+          },
+          {
+            'name': 'Payment Gateway Initialize Session',
+            'syncEvents': ['PAYMENT_GATEWAY_INITIALIZE_SESSION',],
+            'query':  PAYMENT_GATEWAY_INITIALIZE_SESSION,
+            'targetUrl': f'{settings.LMS_ROOT_URL}/hyperpay/saleor-app/api/webhooks/payment-gateway-initialize-session',
+            'isActive': True,
+          },
+
         ]
     }
 

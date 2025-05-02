@@ -51,3 +51,15 @@ fragment TransactionInitializeSessionEvent on TransactionInitializeSession {
   }
 }
 """
+PAYMENT_GATEWAY_INITIALIZE_SESSION = """
+subscription PaymentGatewayInitializeSession {
+  event { ...PaymentGatewayInitializeSessionEvent }
+}
+fragment BasicWebhookMetadata on Event {issuedAt version}
+fragment PaymentGatewayRecipient on App { id privateMetadata { key value } metadata { key value }}
+fragment PaymentGatewayInitializeSessionEvent on PaymentGatewayInitializeSession {
+  ...BasicWebhookMetadata __typename recipient
+    { ...PaymentGatewayRecipient } data amount issuingPrincipal { ... on Node { id }
+  }
+}
+"""

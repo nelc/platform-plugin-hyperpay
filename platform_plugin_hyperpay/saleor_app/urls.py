@@ -6,7 +6,7 @@ from platform_plugin_hyperpay.saleor_app.views import (
     get_saleor_app_manifest,
     register_saleor_app_token,
 )
-from platform_plugin_hyperpay.saleor_app.webhooks import transaction_initialize
+from platform_plugin_hyperpay.saleor_app.webhooks import transaction_initialize, payment_gateway_initialize_session
 
 app_name = 'platform_plugin_hyperpay'  # pylint: disable=invalid-name
 
@@ -15,4 +15,5 @@ urlpatterns = [
     path("api/register", register_saleor_app_token, name="register-saleor-app-token"),
     path("", configure_saleor_app, name="saleor-app"),
     path("api/webhooks/transaction-initialize-session", transaction_initialize, name="transaction-initialize"),  # Placeholder for webhooks
+    path("api/webhooks/payment-gateway-initialize-session", payment_gateway_initialize_session, name="payment-gateway-initialize"),
 ]
