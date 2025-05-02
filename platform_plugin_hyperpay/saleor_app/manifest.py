@@ -26,6 +26,8 @@ def get_app_manifest():
         'about': 'This is a test plugin for hyperpay payment processor.',
 
         'permissions': [
+            'HANDLE_PAYMENTS',
+            'MANAGE_CHECKOUTS',
             'MANAGE_APPS',
             'MANAGE_USERS',
             'MANAGE_STAFF',
