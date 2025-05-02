@@ -181,5 +181,6 @@ class HyperPayResponseView(View):
                 transaction_id,
                 exc.__class__.__name__
             )
-
-        return render(request, "payment/success.html", {"order_id": order_data.get('id'), "order_number": order_data.get('number')})
+        order_id = order_data.get('id')
+        order_url = f"{settings.SALEOR_STOREFRONT_HOST}/order?order={order_id}"
+        return redirect(order_url)
