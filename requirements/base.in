@@ -6,3 +6,4 @@ Django             # Web application framework
 
 openedx-atlas
 edx_django_utils   # Django utilities, we use caching and monitoring
+git+https://github.com/nelc/platform-plugin-saleor.git@test/saleor_integration#egg=platform_plugin_saleor
