@@ -55,7 +55,10 @@ class HyperPayPaymentPageView(View):
     Render the template which loads the HyperPay payment form via JavaScript
     """
     template_name = 'payment/pay.html'
-    payment_processor = HyperPay()
+
+    @property
+    def payment_processor(self):
+        return HyperPay()
 
     def get(self, request):
         """
@@ -71,7 +74,10 @@ class HyperMadaPayPaymentPageView(View):
     Render the template which loads the HyperPay Mada payment form via JavaScript
     """
     template_name = 'payment/pay.html'
-    payment_processor = HyperPayMada()
+
+    @property
+    def payment_processor(self):
+        return HyperPayMada()
 
 
 
