@@ -66,6 +66,7 @@ def configure_saleor_app(request):
 
         return render(request, 'saleor_app/configure.html', {
             'payment_url': payment_url,
+            'payment_button_image': payment_button_image,
             'hyper_pay_api_base_url': hyper_pay_api_base_url,
             'access_token': access_token,
             'success': True,
@@ -77,6 +78,7 @@ def configure_saleor_app(request):
 
     return render(request, 'saleor_app/configure.html', {
         'payment_url': payment_url,
+        'payment_button_image': payment_button_image,
         'hyper_pay_api_base_url': hyper_pay_api_base_url,
         'access_token': access_token,
         'success': False,
