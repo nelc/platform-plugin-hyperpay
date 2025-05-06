@@ -1,9 +1,9 @@
 import json
 import logging
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.core.cache import cache
 
+from django.core.cache import cache
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +61,12 @@ def payment_gateway_initialize_session(request):
     amount = payload.get("action",{}).get("amount")
     data = payload.get("data", {})
     response = {
-        "payment_url": cache.get('payment_url', ''),
-        "payment_button_image" : cache.get('payment_button_image', ''),
-        "hyper_pay_api_base_url": cache.get('hyper_pay_api_base_url', ''),
-        "access_token": cache.get('access_token', ''),
+        "data": {
+            "payment_url": cache.get('payment_url', ''),
+            "payment_button_image" : cache.get('payment_button_image', ''),
+            "hyper_pay_api_base_url": cache.get('hyper_pay_api_base_url', ''),
+            "access_token": cache.get('access_token', ''),
+        }
       }
     logger.info("return response webhook payload: %s", response)
 
